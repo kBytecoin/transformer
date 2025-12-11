@@ -126,3 +126,46 @@ class Decoder(nn.Module):
         ])
         self.fc_out = nn.Linear(d_model,vocab_size)
 
+    def forward(self,tgt,memory,tgt_mask=None,memory_mask=None):
+        out = self.embedding(tgt) * math.sqrt(self.embedding.embedding_dim)
+        out = self.pos_encoding(out)
+        for layer in self.layers:
+            out = layer(out,memory,tgt_mask,memory_mask)
+        return self.fc_out(out)
+    
+class Transformer(nn.Module):
+    def __init__(self,
+                 src_vocab,
+                 tgt_vocab,
+                 d_model=512,
+                 n_heads=8,
+                 num_encoder_layers=6,
+                 num_decoder_layers=6,
+                 d_ff=2048,
+                 dropout=0.1,
+                 max_len=5000):
+        super().__init__()
+        self.encoder = Encoder(
+            src_vocab,d_model,n_heads,num_encoder_layers,d_ff,dropout,max_len
+        )
+        self.decoder = Decoder(
+            tgt_vocab,d_model,n_heads,num_decoder_layers,d_ff,dropout,max_len
+        )
+
+    def forward(self,sec,tgt,src_mask=None,tgt_mask=None,memory_mask=None):
+        memory = self.encoder(src,src_mask)
+        out = self.decoder(tgt,memory,tgt_mask,memory_mask)
+        return out
+    
+def generate_mask(size):
+    mask = torch.triu(torch.ones(size,size),diagonal=1).bool()
+    return mask==0
+
+src_vocab = 10000
+tgt_vocab = 10000
+model = Transformer(src_vocab,tgt_vocab)
+src = torch.randint(0,src_vocab,(32,10))
+tgt = torch.randint(0,tgt_vocab,(32,20))
+tgt_mask = generate_mask(tgt.sizw(1)).to(tgt.device)
+out = model(src,tgt,tgt_mask=tgt_mask)
+print(out.shape)
