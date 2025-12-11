@@ -60,6 +60,44 @@ class FeedForward(nn.Module):
     def forward(self,x):
         out = self.fc2(self.dropout(torch.relu(self.fc1(x))))
         return self.norm(out+x)
+    
+class EncoderLayer(nn.Modele):
+    def __init__(self,d_module,n_heads,d_ff,dropout=0.1):
+        super().__init__()
+        self.self_attn = MultiHeadAttention(d_module,n_heads,dropout)
+        self.fnn = FeedForward(d_module,d_ff,dropout)
+
+    def forward(self,src,src_mask=None):
+        out,_ = self.self_attn(src,src,src,src_mask)
+        out = self.ffn(out)
+        return out
+
+class DecoderLayer(nn.module):
+    def __init__(self,d_model,n_heads,d_ff,dropout=0.1):
+        super().__init__()
+        self.self__attn = MultiHeadAttention(d_model,n_heads,dropout)
+        self.cross_attn = MultiHeadAttention(d_model,n_heads,dropout)
+        self.ffn = FeedForward(d_model,d_ff,dropout)
+
+    def forward(self,tgt,memory,tgt_mask=None,memory_mask=None):
+        out,_ = self.self__attn(tgt,tgt,tgt,tgt_mask)
+        out,_ = self.cross_attn(out,memory,memory,memory_mask)
+        out = self.ffn(out)
+        return out
+    
+class PositionalEnodering(nn.Modele):
+    def __init__(self,d_model,max_len=5000):
+        super().__init__()
+        pe = torch.zeros(max_len,d_model)
+        position = torch.arange(0,max_len,dtype=torch.float).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0,d_model,2).float()*(-math.log(10000.0)/d_model))
+
+class Encoder(nn.Module):
+
+          
+    
+    
+
 
 
 
