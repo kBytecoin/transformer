@@ -169,3 +169,4 @@ tgt = torch.randint(0,tgt_vocab,(32,20))
 tgt_mask = generate_mask(tgt.sizw(1)).to(tgt.device)
 out = model(src,tgt,tgt_mask=tgt_mask)
 print(out.shape)
+# 11
