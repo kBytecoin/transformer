@@ -91,15 +91,38 @@ class PositionalEnodering(nn.Modele):
         pe = torch.zeros(max_len,d_model)
         position = torch.arange(0,max_len,dtype=torch.float).unsqueeze(1)
         div_term = torch.exp(torch.arange(0,d_model,2).float()*(-math.log(10000.0)/d_model))
+        pe[:,0::2] = torch.sin(position*div_term)
+        pe[:,1::2] = torch.cos(position*div_term)
+        pe = pe.unsqueeze(0)
+        self.register_buffer('pe',pe)
+
+    def forward(self,x):
+        seq_len = x.size(1)
+        return x + self.pe[:,:seq_len,:]
 
 class Encoder(nn.Module):
-
+    def __init__(self,vocab_size,d_model,n_heads,num_layer,d_ff,dropout=0.1,max_len=5000):
+        super().__init__()
+        self.embedding = nn.Embedding(vocab_size,d_model)
+        self.pos_encoding = PositionalEnodering(d_model,max_len)
+        self.layers = nn.ModuleList([
+            EncoderLayer(d_model,n_heads,d_ff,dropout) for _ in range(num_layer)
+        ])
           
+    def forward(self,src,src_mask=None):
+        out = self.embedding(src) * math.sqrt(self.embedding.embedding_dim)
+        out = self.pos_encoding(out)
+        for layer in self.layers:
+            out = layer(out,src_mask)
+        return out
     
-    
+class Decoder(nn.Module):
+    def __init__(self,vocab_size,d_model,n_heads,num_layers,d_ff,dropout=0.1,max_len=5000):
+        super().__init__()
+        self.embedding = nn.Embedding(vocab_size,d_model)
+        self.pos_encoding = PositionalEnodering(d_model,max_len)
+        self.layers = nn.ModuleList([
+            DecoderLayer(d_model,n_heads,d_ff,dropout) for _ in range(num_layers)
+        ])
+        self.fc_out = nn.Linear(d_model,vocab_size)
 
-
-
-
-
-        
